@@ -67,7 +67,10 @@ private:
         uint32_t width = 32;
         uint32_t height = 32;
 
+        glm::mat4 lightVP;
+
         void resetDepthTexture();
+        void resetLightMat(const Camera* pCamera, const Light* pLight);
     } mShadowPass;
 
     struct

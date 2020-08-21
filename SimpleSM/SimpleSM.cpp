@@ -49,23 +49,121 @@ Dictionary SimpleSM::getScriptingDictionary()
     return Dictionary();
 }
 
+static void createShadowMatrix(const DirectionalLight* pLight, const float3& center, float radius, glm::mat4& shadowVP)
+{
+    glm::mat4 view = glm::lookAt(center, center + pLight->getWorldDirection(), float3(0, 1, 0));
+    glm::mat4 proj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
+
+    shadowVP = proj * view;
+}
+
+static void createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
+{
+    const float3 lightPos = pLight->getWorldPosition();
+    const float3 lookat = pLight->getWorldDirection() + lightPos;
+    float3 up(0, 1, 0);
+    if (abs(glm::dot(up, pLight->getWorldDirection())) >= 0.95f)
+    {
+        up = float3(1, 0, 0);
+    }
+
+    glm::mat4 view = glm::lookAt(lightPos, lookat, up);
+    float distFromCenter = glm::length(lightPos - center);
+    float nearZ = std::max(0.1f, distFromCenter - radius);
+    float maxZ = std::min(radius * 2, distFromCenter + radius);
+    float angle = pLight->getOpeningAngle() * 2;
+    glm::mat4 proj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
+
+    shadowVP = proj * view;
+}
+
+static void createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
+{
+    switch (pLight->getType())
+    {
+    case LightType::Directional:
+        return createShadowMatrix((DirectionalLight*)pLight, center, radius, shadowVP);
+    case LightType::Point:
+        return createShadowMatrix((PointLight*)pLight, center, radius, fboAspectRatio, shadowVP);
+    default:
+        should_not_get_here();
+    }
+}
+
+static void camClipSpaceToWorldSpace(const Camera* pCamera, float3& center, float& radius)
+{
+    // Store view frustum vertices in world space
+    float3 viewFrustum[8];
+
+    float3 clipSpace[8] =
+    {
+        float3(-1.0f, 1.0f, 0),
+        float3(1.0f, 1.0f, 0),
+        float3(1.0f, -1.0f, 0),
+        float3(-1.0f, -1.0f, 0),
+        float3(-1.0f, 1.0f, 1.0f),
+        float3(1.0f, 1.0f, 1.0f),
+        float3(1.0f, -1.0f, 1.0f),
+        float3(-1.0f, -1.0f, 1.0f),
+    };
+
+    glm::mat4 invViewProj = pCamera->getInvViewProjMatrix();
+    center = float3(0, 0, 0);
+
+    // Average vertices of camera frustum
+    for (uint32_t i = 0; i < 8; i++)
+    {
+        float4 crd = invViewProj * float4(clipSpace[i], 1);
+        viewFrustum[i] = float3(crd) / crd.w;
+        center += viewFrustum[i];
+    }
+
+    center *= (1.0f / 8.0f);
+
+    // Calculate bounding sphere radius
+    radius = 0;
+    for (uint32_t i = 0; i < 8; i++)
+    {
+        float d = glm::length(center - viewFrustum[i]);
+        radius = std::max(d, radius);
+    }
+}
+
+void SimpleSM::ShadowPass::resetLightMat(const Camera *pCamera, const Light *pLight)
+{
+    float3 sceneCenter;
+    float radius;
+
+    camClipSpaceToWorldSpace(pCamera, sceneCenter, radius);
+    createShadowMatrix(pLight, sceneCenter, radius, static_cast<float>(width) / height, lightVP);
+    //mpVars["LightVP"].getParameterBlock()->setBlob(&lightVP, 0, sizeof(lightVP));
+    mpVars["LightVP"]["lightVP"] = lightVP;
+}
+
 RenderPassReflection SimpleSM::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput("output", "Destination texture");
+    reflector.addOutput("output", "Shadow Map");
+    reflector.addInput("input", "World Position");
     //reflector.addInput("src");
     return reflector;
 }
 
 void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
+    mShadowPass.resetDepthTexture();
+    mShadowPass.resetLightMat(mpScene->getCamera().get(), mpScene->getLight(1).get());
+
     const float4 clearColor(0, 0, 0, 1);
     pRenderContext->clearFbo(mShadowPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Depth);
   
     if (mpScene != nullptr)
         mpScene->render(pRenderContext, mShadowPass.mpGraphicsState.get(), mShadowPass.mpVars.get());
 
+    mVisibilityPass.mpVars["shadowMap"] = mShadowPass.pDepth;
+    mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
+    mVisibilityPass.mpVars["LightVP"]["lightVP"] = mShadowPass.lightVP;
     mVisibilityPass.pFbo->attachColorTarget(renderData["output"]->asTexture(), 0);
     pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Color);
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
@@ -73,6 +171,8 @@ void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
 void SimpleSM::renderUI(Gui::Widgets& widget)
 {
+    widget.slider<uint32_t>("Shadow Map Resolution - width", mShadowPass.width, 1, 2048);
+    widget.slider<uint32_t>("Shadow Map Resolution - height", mShadowPass.height, 1, 2048);
 }
 
 void SimpleSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -84,6 +184,9 @@ void SimpleSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
 
 void SimpleSM::ShadowPass::resetDepthTexture()
 {
+    if (pDepth != nullptr && pDepth->getHeight() == height && pDepth->getWidth() == width)
+        return;
+
     pDepth = Texture::create2D(width, height, ResourceFormat::D32Float, 1, 1, nullptr, Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource);
     pFbo->attachDepthStencilTarget(pDepth);
     mpGraphicsState->setFbo(pFbo);
@@ -120,5 +223,4 @@ SimpleSM::SimpleSM()
     samplerDesc.setComparisonMode(Sampler::ComparisonMode::Disabled);
 
     mVisibilityPass.mpVars["smSampler"] = Sampler::create(samplerDesc);
-    mVisibilityPass.mpVars["shadowMap"] = mShadowPass.pDepth;
 }

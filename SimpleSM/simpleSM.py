@@ -27,9 +27,10 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary("WhittedRayTracer.dll")
     loadRenderPassLibrary("WireframePass.dll")
     loadRenderPassLibrary("SimpleSM.dll")
-    SimpleSM = RenderPass("SimpleSM")
-    g.addPass(SimpleSM, "SimpleSM")
-    g.markOutput("SimpleSM.output")
+    g.addPass(RenderPass("SimpleSM"), "simpleSM")
+    g.addPass(RenderPass("GBufferRaster"), "gbRaster")
+    g.addEdge("gbRaster.posW", "simpleSM.input")
+    g.markOutput("simpleSM.output")
     return g
 
 DefaultRenderGraph = render_graph_DefaultRenderGraph()
