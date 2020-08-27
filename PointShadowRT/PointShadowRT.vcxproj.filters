@@ -6,4 +6,7 @@
   <ItemGroup>
     <ClInclude Include="PointShadowRT.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ShaderSource Include="shadow.rt.slang" />
+  </ItemGroup>
 </Project>

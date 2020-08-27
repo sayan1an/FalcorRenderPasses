@@ -35,7 +35,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("PointShadowRT", "Render Pass Template", PointShadowRT::create);
+    lib.registerClass("PointShadowRT", "Raytraced shadow map for point lights", PointShadowRT::create);
 }
 
 PointShadowRT::SharedPtr PointShadowRT::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -53,17 +53,58 @@ RenderPassReflection PointShadowRT::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    //reflector.addOutput("dst");
-    //reflector.addInput("src");
+    reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float);
+    reflector.addInput("input", "World Position");
     return reflector;
 }
 
+static float4 getLightData(const Light* pLight)
+{
+    // First three component indicate position (Point light) or direction (Directional Light), last component indicate point light (0) or directional light (1).
+    float4 data; 
+    switch (pLight->getType()) {
+    case LightType::Directional:
+        data = float4(static_cast<const DirectionalLight*>(pLight)->getWorldDirection(), 1.0f);
+        break;
+    case LightType::Point:
+        data = float4(static_cast<const PointLight*>(pLight)->getWorldPosition(), 0.0f);
+        break;
+    default:
+        should_not_get_here(); 
+    }
+
+    return data;
+}
 void PointShadowRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    // renderData holds the requested resources
-    // auto& pTexture = renderData["src"]->asTexture();
+    mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
+    mVisibilityPass.mpVars["outColor"] = renderData["output"]->asTexture();
+    mVisibilityPass.mpVars["LightData"]["lightData"] = getLightData(mpScene->getLight(1).get());
+
+    const uint2 targetDim = renderData.getDefaultTextureDims();
+    assert(targetDim.x > 0 && targetDim.y > 0);
+
+    // calls ray-gen
+    mpScene->raytrace(pRenderContext, mVisibilityPass.mpProgram.get(), mVisibilityPass.mpVars, uint3(targetDim, 1));
 }
 
 void PointShadowRT::renderUI(Gui::Widgets& widget)
 {
+}
+
+void PointShadowRT::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+{
+    mpScene = pScene;
+    mVisibilityPass.mpProgram->addDefines(mpScene->getSceneDefines());
+    mVisibilityPass.mpVars = RtProgramVars::create(mVisibilityPass.mpProgram, mpScene);
+}
+
+PointShadowRT::PointShadowRT()
+{
+    RtProgram::Desc progDesc;
+    progDesc.addShaderLibrary("RenderPasses/PointShadowRT/shadow.rt.slang").setRayGen("rayGen");
+    progDesc.addMiss(0, "shadowMiss");
+    progDesc.addHitGroup(0, "shadowCHit"); // A no-op hit-group must be provided, otherwise the program crashes.
+    progDesc.setMaxTraceRecursionDepth(1);
+    mVisibilityPass.mpProgram = RtProgram::create(progDesc, 4, 8); // 4 bytes - size of ray-payload, Default 8 bytes size of intersection/hit info (for builtin struct BuiltInTriangleIntersectionAttributes)
 }
