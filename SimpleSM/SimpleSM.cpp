@@ -144,7 +144,7 @@ RenderPassReflection SimpleSM::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput("output", "Shadow Map");
+    reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float);
     reflector.addInput("input", "World Position");
     //reflector.addInput("src");
     return reflector;
@@ -153,7 +153,7 @@ RenderPassReflection SimpleSM::reflect(const CompileData& compileData)
 void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     mShadowPass.resetDepthTexture();
-    mShadowPass.resetLightMat(mpScene->getCamera().get(), mpScene->getLight(1).get());
+    mShadowPass.resetLightMat(mpScene->getCamera().get(), mpScene->getLight(0).get());
 
     const float4 clearColor(0, 0, 0, 1);
     pRenderContext->clearFbo(mShadowPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Depth);

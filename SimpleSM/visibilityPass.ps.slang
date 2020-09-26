@@ -16,9 +16,11 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     cPosLight.xy = cPosLight.xy * 0.5 + 0.5;
     cPosLight.y = 1 -  cPosLight.y;
     float depth = shadowMap.Sample(smSampler, cPosLight.xy).x;//shadowMap[10, 10].x);
-
+    /*
     if (depth < cPosLight.z)
         return float4(0.0);
 
-    return float4(1,1,1,1);
+    return float4(1,1,1,1);*/
+
+    return float4(depth, cPosLight.z, cPosLight.x, cPosLight.y);
 }

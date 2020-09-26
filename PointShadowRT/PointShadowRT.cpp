@@ -79,7 +79,7 @@ void PointShadowRT::execute(RenderContext* pRenderContext, const RenderData& ren
 {
     mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
     mVisibilityPass.mpVars["outColor"] = renderData["output"]->asTexture();
-    mVisibilityPass.mpVars["LightData"]["lightData"] = getLightData(mpScene->getLight(1).get());
+    mVisibilityPass.mpVars["LightData"]["lightData"] = getLightData(mpScene->getLight(0).get());
 
     const uint2 targetDim = renderData.getDefaultTextureDims();
     assert(targetDim.x > 0 && targetDim.y > 0);

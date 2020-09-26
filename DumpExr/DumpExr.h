@@ -31,10 +31,10 @@
 
 using namespace Falcor;
 
-class SimpleSM : public RenderPass, public inherit_shared_from_this<RenderPass, SimpleSM>
+class DumpExr : public RenderPass, public inherit_shared_from_this<RenderPass, DumpExr>
 {
 public:
-    using SharedPtr = std::shared_ptr<SimpleSM>;
+    using SharedPtr = std::shared_ptr<DumpExr>;
     using inherit_shared_from_this::shared_from_this;
 
     /** Create a new render pass object.
@@ -44,43 +44,21 @@ public:
     */
     static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
 
-    virtual std::string getDesc() override { return "Implements shadow map for a single point light/directional light"; }
+    virtual std::string getDesc() override { return "Insert pass description here"; }
     virtual Dictionary getScriptingDictionary() override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
     virtual void compile(RenderContext* pContext, const CompileData& compileData) override {}
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
+    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override {}
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    SimpleSM();
+    DumpExr() = default;
 
-    struct ShadowPass
-    {
-        GraphicsProgram::SharedPtr mpProgram;
-        GraphicsState::SharedPtr mpGraphicsState;
-        GraphicsVars::SharedPtr mpVars;
-        Fbo::SharedPtr pFbo;
-        Texture::SharedPtr pDepth;
-        uint32_t width = 256;
-        uint32_t height = 256;
-
-        glm::mat4 lightVP;
-
-        void resetDepthTexture();
-        void resetLightMat(const Camera* pCamera, const Light* pLight);
-    } mShadowPass;
-
-    struct
-    {
-        FullScreenPass::SharedPtr pPass;
-        Fbo::SharedPtr pFbo;
-        GraphicsVars::SharedPtr mpVars;
-        Sampler::SharedPtr pPointSampler;
-    } mVisibilityPass;
-
-    Scene::SharedPtr mpScene;
-    
+    uint64_t index = 0;
+    uint32_t featureIdx = 0;
+    std::string tagA = "feature_";
+    std::string tagB = "target_";
 };
