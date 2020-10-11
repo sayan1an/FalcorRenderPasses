@@ -90,6 +90,21 @@ static void createShadowMatrix(const Light* pLight, const float3& center, float 
     }
 }
 
+static void getLightPosition(const Light* pLight, float3& lightPos)
+{
+    switch (pLight->getType())
+    {
+    case LightType::Directional:
+        should_not_get_here();
+        break;
+    case LightType::Point:
+        lightPos = ((PointLight*)pLight)->getWorldPosition();
+        break;
+    default:
+        should_not_get_here();
+    }
+}
+
 static void camClipSpaceToWorldSpace(const Camera* pCamera, float3& center, float& radius)
 {
     // Store view frustum vertices in world space
@@ -138,13 +153,16 @@ void SimpleSM::ShadowPass::resetLightMat(const Camera *pCamera, const Light *pLi
     createShadowMatrix(pLight, sceneCenter, radius, static_cast<float>(width) / height, lightVP);
     //mpVars["LightVP"].getParameterBlock()->setBlob(&lightVP, 0, sizeof(lightVP));
     mpVars["LightVP"]["lightVP"] = lightVP;
+
+    getLightPosition(pLight, lightPos);
+    mpVars["LightPos"]["lightPos"] = float4(lightPos, 1);
 }
 
 RenderPassReflection SimpleSM::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float);
+    reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess | ResourceBindFlags::RenderTarget).format(ResourceFormat::RGBA32Float);
     reflector.addInput("input", "World Position");
     //reflector.addInput("src");
     return reflector;
@@ -155,16 +173,19 @@ void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderDa
     mShadowPass.resetDepthTexture();
     mShadowPass.resetLightMat(mpScene->getCamera().get(), mpScene->getLight(0).get());
 
-    const float4 clearColor(0, 0, 0, 1);
-    pRenderContext->clearFbo(mShadowPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Depth);
+    float4 clearColor(1, 0, 0, 1);
+    pRenderContext->clearFbo(mShadowPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Depth | FboAttachmentType::Color);
   
     if (mpScene != nullptr)
         mpScene->render(pRenderContext, mShadowPass.mpGraphicsState.get(), mShadowPass.mpVars.get());
 
     mVisibilityPass.mpVars["shadowMap"] = mShadowPass.pDepth;
+    mVisibilityPass.mpVars["shadowMapLinear"] = mShadowPass.pDepthLinear;
     mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
     mVisibilityPass.mpVars["LightVP"]["lightVP"] = mShadowPass.lightVP;
+    mVisibilityPass.mpVars["LightPos"]["lightPos"] = float4(mShadowPass.lightPos, 1);
     mVisibilityPass.pFbo->attachColorTarget(renderData["output"]->asTexture(), 0);
+    clearColor = float4(0, 0, 0, 1);
     pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Color);
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
 }
@@ -188,7 +209,9 @@ void SimpleSM::ShadowPass::resetDepthTexture()
         return;
 
     pDepth = Texture::create2D(width, height, ResourceFormat::D32Float, 1, 1, nullptr, Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource);
+    pDepthLinear = Texture::create2D(width, height, ResourceFormat::R32Float, 1, 1, nullptr, Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
     pFbo->attachDepthStencilTarget(pDepth);
+    pFbo->attachColorTarget(pDepthLinear, 0);
     mpGraphicsState->setFbo(pFbo);
 
     GraphicsState::Viewport VP;

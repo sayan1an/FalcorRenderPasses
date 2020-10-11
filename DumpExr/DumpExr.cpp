@@ -80,8 +80,8 @@ void DumpExr::execute(RenderContext* pRenderContext, const RenderData& renderDat
     const auto& pDstTextureA = renderData["dstA"]->asTexture();
     const auto& pDstTextureB = renderData["dstB"]->asTexture();
     
-    pSrcTextureA->captureToFile(0, 0, "D:/results/" + tagA + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
-    pSrcTextureB->captureToFile(0, 0, "D:/results/" + tagB + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
 
     pRenderContext->blit(pSrcTextureA->getSRV(), pDstTextureA->getRTV());
     pRenderContext->blit(pSrcTextureB->getSRV(), pDstTextureB->getRTV());

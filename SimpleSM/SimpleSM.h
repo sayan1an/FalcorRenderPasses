@@ -64,10 +64,12 @@ private:
         GraphicsVars::SharedPtr mpVars;
         Fbo::SharedPtr pFbo;
         Texture::SharedPtr pDepth;
-        uint32_t width = 256;
-        uint32_t height = 256;
+        Texture::SharedPtr pDepthLinear;
+        uint32_t width = 1024;
+        uint32_t height = 1024;
 
         glm::mat4 lightVP;
+        float3 lightPos;
 
         void resetDepthTexture();
         void resetLightMat(const Camera* pCamera, const Light* pLight);

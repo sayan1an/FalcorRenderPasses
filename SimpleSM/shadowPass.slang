@@ -5,17 +5,33 @@ cbuffer LightVP
     float4x4 lightVP;
 }
 
-float4 vsMain(VSIn vIn) : SV_POSITION
+cbuffer LightPos
 {
+    float4 lightPos;
+}
+
+struct VsOut
+{
+    float4 worldPos : POSITION;
+    float4 worldPosPerspective : SV_POSITION;
+}
+
+VsOut vsMain(VSIn vIn)
+{
+    VsOut vsOut;
     float4x4 worldMat = gScene.getWorldMatrix(vIn.meshInstanceID);
     //float4x4 viewProjMat = gScene.camera.getViewProj();
     float4x4 mvpMat = mul(worldMat, lightVP);
-    return mul(float4(vIn.pos, 1.f), mvpMat);
+
+    vsOut.worldPos = mul(float4(vIn.pos, 1.f), worldMat);
+    vsOut.worldPosPerspective = mul(float4(vIn.pos, 1.f), mvpMat);
+
+    return vsOut;
 }
 
-void psMain(float4 posW : SV_POSITION)
+float psMain(VsOut vsOut) : SV_TARGET0
 {
-    
+    return length(vsOut.worldPos.xyz - lightPos.xyz);
 }
 
 /*
