@@ -163,7 +163,8 @@ RenderPassReflection SimpleSM::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess | ResourceBindFlags::RenderTarget).format(ResourceFormat::RGBA32Float);
-    reflector.addInput("input", "World Position");
+    reflector.addInput("worldPos", "World Position");
+    reflector.addInput("worldNormal", "World Normal");
     //reflector.addInput("src");
     return reflector;
 }
@@ -181,7 +182,8 @@ void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     mVisibilityPass.mpVars["shadowMap"] = mShadowPass.pDepth;
     mVisibilityPass.mpVars["shadowMapLinear"] = mShadowPass.pDepthLinear;
-    mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
+    mVisibilityPass.mpVars["worldPos"] = renderData["worldPos"]->asTexture();
+    mVisibilityPass.mpVars["worldNorm"] = renderData["worldNormal"]->asTexture();
     mVisibilityPass.mpVars["LightVP"]["lightVP"] = mShadowPass.lightVP;
     mVisibilityPass.mpVars["LightPos"]["lightPos"] = float4(mShadowPass.lightPos, 1);
     mVisibilityPass.pFbo->attachColorTarget(renderData["output"]->asTexture(), 0);

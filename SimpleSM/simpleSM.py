@@ -29,7 +29,8 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary("SimpleSM.dll")
     g.addPass(RenderPass("SimpleSM"), "simpleSM")
     g.addPass(RenderPass("GBufferRaster"), "gbRaster")
-    g.addEdge("gbRaster.posW", "simpleSM.input")
+    g.addEdge("gbRaster.posW", "simpleSM.worldPos")
+    g.addEdge("gbRaster.normW", "simpleSM.worldNormal")
     g.markOutput("simpleSM.output")
     return g
 

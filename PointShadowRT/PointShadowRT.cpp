@@ -97,6 +97,13 @@ void PointShadowRT::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpScene = pScene;
     mVisibilityPass.mpProgram->addDefines(mpScene->getSceneDefines());
     mVisibilityPass.mpVars = RtProgramVars::create(mVisibilityPass.mpProgram, mpScene);
+
+    Sampler::Desc samplerDesc;
+    samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border);
+    samplerDesc.setLodParams(0.f, 0.f, 0.f);
+    samplerDesc.setComparisonMode(Sampler::ComparisonMode::Disabled);
+
+    mVisibilityPass.mpVars["sampler"] = Sampler::create(samplerDesc);
 }
 
 PointShadowRT::PointShadowRT()
