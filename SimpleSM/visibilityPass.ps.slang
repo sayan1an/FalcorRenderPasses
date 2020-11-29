@@ -61,4 +61,5 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     float skew = dot(lightDir, wNorm.xyz);
     skew = skew > 0.0 ? skew : 0.0; 
     return float4(depth * isValid, cPosLight.z, skew, cPosLight.y);
+    //return float4(depth * isValid > cPosLight.z);
 }

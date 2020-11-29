@@ -505,7 +505,7 @@ namespace Mogwai
             float3 lightPosition = { 8, 8, 8 };
             auto pointLight = PointLight::create();
             pointLight->setWorldPosition(lightPosition);
-            pointLight->setOpeningAngle(float(std::_Pi) / 4.0);
+            pointLight->setOpeningAngle(float(std::_Pi) / 2.87f);
             float3 lightDirection = -lightPosition / glm::length(lightPosition);
             pointLight->setWorldDirection(lightDirection);
 

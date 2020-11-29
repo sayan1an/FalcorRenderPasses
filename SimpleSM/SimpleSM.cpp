@@ -194,8 +194,8 @@ void SimpleSM::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
 void SimpleSM::renderUI(Gui::Widgets& widget)
 {
-    widget.slider<uint32_t>("Shadow Map Resolution - width", mShadowPass.width, 1, 2048);
-    widget.slider<uint32_t>("Shadow Map Resolution - height", mShadowPass.height, 1, 2048);
+    widget.slider<uint32_t>("Shadow Map Resolution - width", mShadowPass.width, 1, 2048*4);
+    widget.slider<uint32_t>("Shadow Map Resolution - height", mShadowPass.height, 1, 2048*4);
 }
 
 void SimpleSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
