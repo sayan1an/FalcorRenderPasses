@@ -54,7 +54,8 @@ RenderPassReflection PointShadowRT::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addOutput("output", "Shadow Map").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float);
-    reflector.addInput("input", "World Position");
+    reflector.addInput("worldPos", "World Position");
+    reflector.addInput("worldNorm", "World Normal");
     return reflector;
 }
 
@@ -77,7 +78,8 @@ static float4 getLightData(const Light* pLight)
 }
 void PointShadowRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    mVisibilityPass.mpVars["worldPos"] = renderData["input"]->asTexture();
+    mVisibilityPass.mpVars["worldPos"] = renderData["worldPos"]->asTexture();
+    mVisibilityPass.mpVars["worldNorm"] = renderData["worldNorm"]->asTexture();
     mVisibilityPass.mpVars["outColor"] = renderData["output"]->asTexture();
     mVisibilityPass.mpVars["LightData"]["lightData"] = getLightData(mpScene->getLight(0).get());
 

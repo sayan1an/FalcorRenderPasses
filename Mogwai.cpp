@@ -433,15 +433,14 @@ namespace Mogwai
         }
     }
 
-    static void addKeyframes(std::shared_ptr<Animation>& animation, uint32_t animTime, uint32_t matrixId, float scale, float rotSpeed, float3 tranSpeed, float3 transOffset)
+    static void addKeyframes(std::shared_ptr<Animation>& animation, uint32_t animTime, uint32_t matrixId, float scale, float rotSpeed, float3 tranSpeed, float3 transOffset, float3 axis = float3(1,1,1))
     {
         size_t animChannelId = animation->addChannel(matrixId);
-      
+        axis = axis / glm::length(axis);
+
         for (uint i = 0; i < animTime; i++) {
             Animation::Keyframe kf;
             kf.time = float(i);
-            glm::vec3 axis = glm::vec3(1, 1, 1);
-            axis = axis / glm::length(axis);
             kf.scaling = glm::vec3(scale);
             kf.rotation = glm::angleAxis(rotSpeed * i, axis);
             kf.translation = float3(sin(2 * std::_Pi * i / animTime), cos(2 * std::_Pi * i / animTime), cos(2 * std::_Pi * i / animTime)) * tranSpeed + transOffset;
@@ -454,7 +453,7 @@ namespace Mogwai
         auto sceneBuilder = SceneBuilder::create();
 
         // Sayantan, scene 1
-        {
+        /*{
             SceneBuilder::InstanceMatrices groundPlaneInstances = { glm::scale(glm::identity<glm::mat4>(), glm::vec3(10, 10, 10)) };
             sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/groundPlane.obj", groundPlaneInstances);
             SceneBuilder::InstanceMatrices objectInstance = { glm::translate(glm::identity<glm::mat4>(), glm::vec3(0,0,0)) };
@@ -485,6 +484,58 @@ namespace Mogwai
             glm::vec3 position(1, 0.5, 1);
             position /= glm::length(position);
             position *= 10;
+            cam->setPosition(position);
+            sceneBuilder->setCamera(cam);
+
+            setScene(sceneBuilder->getScene());
+        }*/
+
+        // Sayantan, scene 2
+        {
+            
+            //SceneBuilder::InstanceMatrices groundPlaneInstances = { glm::scale(glm::identity<glm::mat4>(), glm::vec3(20, 20, 20)) };
+            //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/groundPlane.obj", groundPlaneInstances);
+            SceneBuilder::InstanceMatrices objectInstance = { glm::translate(glm::identity<glm::mat4>(), glm::vec3(0,0,0)) };
+           
+            sceneBuilder->import("D:/chairTree.obj", objectInstance);
+            //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/cube/cube.obj", objectInstance);
+            //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/torus/torus.obj", objectInstance);
+            //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/hdTree/stem.obj", objectInstance);
+            //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/hdTree/leaves.obj", objectInstance);
+            float3 lightPosition = { 8, 8, 8 };
+            auto pointLight = PointLight::create();
+            pointLight->setWorldPosition(lightPosition);
+            pointLight->setOpeningAngle(float(std::_Pi) / 4.0);
+            float3 lightDirection = -lightPosition / glm::length(lightPosition);
+            pointLight->setWorldDirection(lightDirection);
+
+            SceneBuilder::Node lightNode;
+            lightNode.transform = glm::translate(glm::identity<glm::mat4>(), glm::vec3(-8, 8, -8));
+            uint32_t lightNodeId = sceneBuilder->addNode(lightNode);
+            sceneBuilder->addLight(pointLight, lightNodeId);
+
+            uint32_t animTime = 100;
+            auto animationLight = Animation::create("AnimationLight", animTime);
+            addKeyframes(animationLight, animTime, lightNodeId, 1.0f, 0.0f, float3(-12, 0, -12), float3(0, 12, 0));
+            sceneBuilder->addAnimation(0, animationLight);
+
+            /*
+            auto scene = sceneBuilder->getScene();
+
+           
+            auto animationA = Animation::create("AnimationA", animTime);
+            uint32_t count = scene->getMeshInstanceCount();
+
+            addKeyframes(animationA, animTime, scene->getMeshInstance(1).globalMatrixID, 0.3f, 0.2f, float3(0, 0.0f, 0), float3(0, 0.0f, 0), float3(0, 1.0f, 0));
+            //addKeyframes(animation, animTime, scene->getMeshInstance(2).globalMatrixID, 0.9f, 0.6f, float3(0, 0.0f, 0), float3(0, 0.0f, 0), float3(0, 1.0f, 0));
+            //addKeyframes(animation, animTime, scene->getMeshInstance(3).globalMatrixID, 0.9f, 1.0f, float3(0, 0.0f, 0), float3(0, 0.0f, 0), float3(0, 1.0f, 0));
+            */
+           
+
+            auto cam = Camera::create();
+            glm::vec3 position(1, 0.5, 1);
+            position /= glm::length(position);
+            position *= 22.5;
             cam->setPosition(position);
             sceneBuilder->setCamera(cam);
 

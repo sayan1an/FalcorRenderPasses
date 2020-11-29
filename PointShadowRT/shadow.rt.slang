@@ -2,8 +2,9 @@ import Scene.Raytracing;
 
 layout(binding = 0) SamplerState sampler : register(s0);
 layout(binding = 1) texture2D worldPos : register(t0);
-layout(binding = 2) RWTexture2D outColor : register(t1);
-layout(binding = 3) cbuffer LightData : register(b0)
+layout(binding = 2) texture2D worldNorm : register(t1);
+layout(binding = 3) RWTexture2D outColor : register(t2);
+layout(binding = 4) cbuffer LightData : register(b0)
 {
     float4 lightData; // First three component indicate position (Point light) or direction (Directional Light), last component indicate point light (0) or directional light (1).
 }
@@ -78,11 +79,18 @@ void rayGen()
         {
             float2 texC = (float2(launchIndex) + float2(offset) + float2(i,j) * delta) / float2(launchSize);
             float3 origin = worldPos.SampleLevel(sampler, texC, 0).xyz; //float3 origin = worldPos[launchIndex].xyz;
-    
-            float3 lightDir =  lightData.w < 0.5 ? normalize(lightData.xyz - origin) : lightData.xyz;
+            float3 normal = worldNorm.SampleLevel(sampler, texC, 0).xyz;
 
-            outCol += float3(traceShadowRay(origin, lightDir));
+            float distance = lightData.w < 0.5 ? length(lightData.xyz - origin) : length(lightData.xyz);
+            float3 lightDir =  lightData.w < 0.5 ? lightData.xyz - origin : lightData.xyz;
+
+            lightDir /= distance;
+
+            float cos = dot(lightDir, normal);
+            cos = cos > 0 ? cos : 0;
+
+            outCol += float3(traceShadowRay(origin, lightDir) * cos / (4 * distance * distance * 3.14159));
         }
-
-     outColor[launchIndex] = float4(outCol / (nSample * nSample), 1.0f);
+    float lightPower = 600; // Change this in readExr->readFeature when changed here
+     outColor[launchIndex] = float4(lightPower * outCol / (nSample * nSample), 1.0f);
 }

@@ -34,7 +34,8 @@ def render_graph_DefaultRenderGraph():
     g.addPass(RenderPass("GBufferRaster"), "gbRaster")
     g.addPass(RenderPass("DumpExr", {"featureIdx" : 0}), "dumpExr")
        
-    g.addEdge("gbRaster.posW", "pointShadowRT.input")
+    g.addEdge("gbRaster.posW", "pointShadowRT.worldPos")
+    g.addEdge("gbRaster.normW", "pointShadowRT.worldNorm")
     g.addEdge("gbRaster.posW", "simpleSM.worldPos")
     g.addEdge("gbRaster.normW", "simpleSM.worldNormal")
     g.addEdge("simpleSM.output", "dumpExr.srcA")

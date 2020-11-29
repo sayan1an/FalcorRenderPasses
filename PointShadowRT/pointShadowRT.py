@@ -30,7 +30,8 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary("PointShadowRT.dll")
     g.addPass(RenderPass("PointShadowRT"), "pointShadowRT")
     g.addPass(RenderPass("GBufferRaster"), "gbRaster")
-    g.addEdge("gbRaster.posW", "pointShadowRT.input")
+    g.addEdge("gbRaster.posW", "pointShadowRT.worldPos")
+    g.addEdge("gbRaster.normW", "pointShadowRT.worldNorm")
     g.markOutput("pointShadowRT.output")
     return g
 
