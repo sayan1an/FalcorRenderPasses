@@ -28,6 +28,7 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
+#include "Utils/Sampling/SampleGenerator.h"
 
 using namespace Falcor;
 
@@ -64,4 +65,5 @@ private:
     } mVisibilityPass;
 
     Scene::SharedPtr mpScene;
+    SampleGenerator::SharedPtr  mpSampleGenerator;
 };

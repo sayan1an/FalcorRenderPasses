@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "PointShadowRT.h"
+#include <chrono>
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -83,6 +84,14 @@ void PointShadowRT::execute(RenderContext* pRenderContext, const RenderData& ren
     mVisibilityPass.mpVars["outColor"] = renderData["output"]->asTexture();
     mVisibilityPass.mpVars["LightData"]["lightData"] = getLightData(mpScene->getLight(0).get());
 
+    uint32_t seed;
+    {
+        using namespace std::chrono;
+        seed = (time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count()) & 0xffffffff;
+    }
+
+    mVisibilityPass.mpVars["CB"]["gSeed"] = seed;
+
     const uint2 targetDim = renderData.getDefaultTextureDims();
     assert(targetDim.x > 0 && targetDim.y > 0);
 
@@ -98,7 +107,14 @@ void PointShadowRT::setScene(RenderContext* pRenderContext, const Scene::SharedP
 {
     mpScene = pScene;
     mVisibilityPass.mpProgram->addDefines(mpScene->getSceneDefines());
+
+    // Configure program.
+    mpSampleGenerator->prepareProgram(mVisibilityPass.mpProgram.get());
+
     mVisibilityPass.mpVars = RtProgramVars::create(mVisibilityPass.mpProgram, mpScene);
+
+    bool success = mpSampleGenerator->setShaderData(mVisibilityPass.mpVars->getRootVar());
+    if (!success) throw std::exception("Failed to bind sample generator");
 
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border);
@@ -116,4 +132,8 @@ PointShadowRT::PointShadowRT()
     progDesc.addHitGroup(0, "shadowCHit"); // A no-op hit-group must be provided, otherwise the program crashes.
     progDesc.setMaxTraceRecursionDepth(1);
     mVisibilityPass.mpProgram = RtProgram::create(progDesc, 4, 8); // 4 bytes - size of ray-payload, Default 8 bytes size of intersection/hit info (for builtin struct BuiltInTriangleIntersectionAttributes)
+
+    // Create a sample generator.
+    mpSampleGenerator = SampleGenerator::create(SAMPLE_GENERATOR_UNIFORM);
+    assert(mpSampleGenerator);
 }

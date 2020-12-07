@@ -1,4 +1,5 @@
 import Scene.Raytracing;
+import Utils.Sampling.SampleGenerator;
 
 layout(binding = 0) SamplerState sampler : register(s0);
 layout(binding = 1) texture2D worldPos : register(t0);
@@ -7,6 +8,10 @@ layout(binding = 3) RWTexture2D outColor : register(t2);
 layout(binding = 4) cbuffer LightData : register(b0)
 {
     float4 lightData; // First three component indicate position (Point light) or direction (Directional Light), last component indicate point light (0) or directional light (1).
+}
+layout(binding = 5) cbuffer CB : register(b1)
+{
+    uint        gSeed;        // seed for PRNG
 }
 
 /** Payload for shadow ray.
@@ -135,35 +140,36 @@ void rayGen()
     uint2 launchIndex = DispatchRaysIndex().xy;
     uint2 launchSize = DispatchRaysDimensions().xy;
 
-    float3 outCol = float3(0);
-    uint nSample = 4;
-    float delta = 1.0 / nSample;
-    float offset = delta / 2.0;
+    SampleGenerator sg = SampleGenerator.create(launchIndex, gSeed);
+    sampleNext1D(sg);
+    sampleNext1D(sg);
 
+    float3 outCol = float3(0);
+    uint nSample = 36;
+  
     float3 emitterNormal =  normalize(lightData.xyz);
     float3 emitterTangent = normalize(cross(emitterNormal, float3(1)));
     float3 emitterBiTangent = cross(emitterNormal, emitterTangent);
     float emitterSize = 1.0;
 
-    for (uint i = 0; i < nSample; i++)
-        for (uint j = 0; j < nSample; j++)
-        {
-            float2 texC = (float2(launchIndex) + float2(offset) + float2(i,j) * delta) / float2(launchSize);
-            float3 origin = worldPos.SampleLevel(sampler, texC, 0).xyz; //float3 origin = worldPos[launchIndex].xyz;
-            float3 normal = worldNorm.SampleLevel(sampler, texC, 0).xyz;
+    for (uint i = 0; i < nSample; i++) {
+        float2 uv = sampleNext2D(sg);
+        float2 texC = (float2(launchIndex) + uv) / float2(launchSize);
+        float3 origin = worldPos.SampleLevel(sampler, texC, 0).xyz; //float3 origin = worldPos[launchIndex].xyz;
+        float3 normal = worldNorm.SampleLevel(sampler, texC, 0).xyz;
 
-            float3 emitterPosition = lightData.xyz + emitterSize * (offset + delta * i - 0.5) * emitterTangent +  emitterSize * (offset + delta * j - 0.5) * emitterBiTangent;
-            float distance = length(emitterPosition - origin);
-            float3 lightDir =  emitterPosition - origin;
+        float3 emitterPosition = lightData.xyz + emitterSize * (uv.x - 0.5) * emitterTangent +  emitterSize * (uv.y - 0.5) * emitterBiTangent;
+        float distance = length(emitterPosition - origin);
+        float3 lightDir =  emitterPosition - origin;
 
-            lightDir /= distance;
+        lightDir /= distance;
 
-            float cos = dot(lightDir, normal);
-            float cosEmitter = abs(dot(lightDir, emitterNormal));
-            cos = cos > 0 ? cos : 0;
+        float cos = dot(lightDir, normal);
+        float cosEmitter = abs(dot(lightDir, emitterNormal));
+        cos = cos > 0 ? cos : 0;
 
-            outCol += float3(traceShadowRay(origin, lightDir) * cos * cosEmitter / (4 * distance * distance * 3.14159));
-        }
+        outCol += float3(traceShadowRay(origin, lightDir) * cos * cosEmitter / (4 * distance * distance * 3.14159));
+    }
     float lightPower = 600; // Change this in readExr->readFeature when changed here
-     outColor[launchIndex] = float4(lightPower * outCol / (nSample * nSample), 1.0f);
+    outColor[launchIndex] = float4(lightPower * outCol / nSample, 1.0f);
 }
