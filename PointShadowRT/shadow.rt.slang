@@ -62,7 +62,7 @@ void rayGen()
 }
 */
 
-// With AA
+/* With AA, diffuse shading
 [shader("raygeneration")]
 void rayGen()
 {
@@ -90,6 +90,79 @@ void rayGen()
             cos = cos > 0 ? cos : 0;
 
             outCol += float3(traceShadowRay(origin, lightDir) * cos / (4 * distance * distance * 3.14159));
+        }
+    float lightPower = 600; // Change this in readExr->readFeature when changed here
+     outColor[launchIndex] = float4(lightPower * outCol / (nSample * nSample), 1.0f);
+}*/
+
+/* With AA, diffuse shading
+[shader("raygeneration")]
+void rayGen()
+{
+    uint2 launchIndex = DispatchRaysIndex().xy;
+    uint2 launchSize = DispatchRaysDimensions().xy;
+
+    float3 outCol = float3(0);
+    uint nSample = 4;
+    float delta = 1.0 / nSample;
+    float offset = delta / 2.0;
+
+    for (uint i = 0; i < nSample; i++)
+        for (uint j = 0; j < nSample; j++)
+        {
+            float2 texC = (float2(launchIndex) + float2(offset) + float2(i,j) * delta) / float2(launchSize);
+            float3 origin = worldPos.SampleLevel(sampler, texC, 0).xyz; //float3 origin = worldPos[launchIndex].xyz;
+            float3 normal = worldNorm.SampleLevel(sampler, texC, 0).xyz;
+
+            float distance = lightData.w < 0.5 ? length(lightData.xyz - origin) : length(lightData.xyz);
+            float3 lightDir =  lightData.w < 0.5 ? lightData.xyz - origin : lightData.xyz;
+
+            lightDir /= distance;
+
+            float cos = dot(lightDir, normal);
+            cos = cos > 0 ? cos : 0;
+
+            outCol += float3(traceShadowRay(origin, lightDir) * cos / (4 * distance * distance * 3.14159));
+        }
+    float lightPower = 600; // Change this in readExr->readFeature when changed here
+     outColor[launchIndex] = float4(lightPower * outCol / (nSample * nSample), 1.0f);
+}*/
+
+// soft-shadow
+[shader("raygeneration")]
+void rayGen()
+{
+    uint2 launchIndex = DispatchRaysIndex().xy;
+    uint2 launchSize = DispatchRaysDimensions().xy;
+
+    float3 outCol = float3(0);
+    uint nSample = 4;
+    float delta = 1.0 / nSample;
+    float offset = delta / 2.0;
+
+    float3 emitterNormal =  normalize(lightData.xyz);
+    float3 emitterTangent = normalize(cross(emitterNormal, float3(1)));
+    float3 emitterBiTangent = cross(emitterNormal, emitterTangent);
+    float emitterSize = 1.0;
+
+    for (uint i = 0; i < nSample; i++)
+        for (uint j = 0; j < nSample; j++)
+        {
+            float2 texC = (float2(launchIndex) + float2(offset) + float2(i,j) * delta) / float2(launchSize);
+            float3 origin = worldPos.SampleLevel(sampler, texC, 0).xyz; //float3 origin = worldPos[launchIndex].xyz;
+            float3 normal = worldNorm.SampleLevel(sampler, texC, 0).xyz;
+
+            float3 emitterPosition = lightData.xyz + emitterSize * (offset + delta * i - 0.5) * emitterTangent +  emitterSize * (offset + delta * j - 0.5) * emitterBiTangent;
+            float distance = length(emitterPosition - origin);
+            float3 lightDir =  emitterPosition - origin;
+
+            lightDir /= distance;
+
+            float cos = dot(lightDir, normal);
+            float cosEmitter = abs(dot(lightDir, emitterNormal));
+            cos = cos > 0 ? cos : 0;
+
+            outCol += float3(traceShadowRay(origin, lightDir) * cos * cosEmitter / (4 * distance * distance * 3.14159));
         }
     float lightPower = 600; // Change this in readExr->readFeature when changed here
      outColor[launchIndex] = float4(lightPower * outCol / (nSample * nSample), 1.0f);

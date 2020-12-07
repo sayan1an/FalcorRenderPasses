@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "DumpExr.h"
+#include "Falcor.h"
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -79,12 +80,15 @@ void DumpExr::execute(RenderContext* pRenderContext, const RenderData& renderDat
     const auto& pSrcTextureB = renderData["srcB"]->asTexture();
     const auto& pDstTextureA = renderData["dstA"]->asTexture();
     const auto& pDstTextureB = renderData["dstB"]->asTexture();
-    
+
+    index = gpFramework->getGlobalClock().getFrame();
+
     pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
     pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
 
     pRenderContext->blit(pSrcTextureA->getSRV(), pDstTextureA->getRTV());
     pRenderContext->blit(pSrcTextureB->getSRV(), pDstTextureB->getRTV());
+        
 
     index++;
 }

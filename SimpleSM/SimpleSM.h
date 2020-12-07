@@ -65,8 +65,8 @@ private:
         Fbo::SharedPtr pFbo;
         Texture::SharedPtr pDepth;
         Texture::SharedPtr pDepthLinear;
-        uint32_t width = 2048 * 2;
-        uint32_t height = 2048 * 2;
+        uint32_t width = 4096;
+        uint32_t height = 4096;
 
         glm::mat4 lightVP;
         float3 lightPos;
