@@ -145,12 +145,12 @@ void rayGen()
     sampleNext1D(sg);
 
     float3 outCol = float3(0);
-    uint nSample = 36;
+    uint nSample = 4;
   
     float3 emitterNormal =  normalize(lightData.xyz);
     float3 emitterTangent = normalize(cross(emitterNormal, float3(1)));
     float3 emitterBiTangent = cross(emitterNormal, emitterTangent);
-    float emitterSize = 1.0;
+    float emitterSize = 1.0;// Note changing emitterSize here, also change emitterSize in SimpleSM::perturb 
 
     for (uint i = 0; i < nSample; i++) {
         float2 uv = sampleNext2D(sg);

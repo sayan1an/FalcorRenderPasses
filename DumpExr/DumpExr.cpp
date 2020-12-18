@@ -83,8 +83,8 @@ void DumpExr::execute(RenderContext* pRenderContext, const RenderData& renderDat
 
     index = gpFramework->getGlobalClock().getFrame();
 
-    pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
-    pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + "0_" + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + "0_" + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
 
     pRenderContext->blit(pSrcTextureA->getSRV(), pDstTextureA->getRTV());
     pRenderContext->blit(pSrcTextureB->getSRV(), pDstTextureB->getRTV());

@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "SimpleSM.h"
+#include <chrono>
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -57,9 +58,25 @@ static void createShadowMatrix(const DirectionalLight* pLight, const float3& cen
     shadowVP = proj * view;
 }
 
+static std::default_random_engine generator;
+static std::uniform_real_distribution<float> distribution;
+
+static float3 perturb(const float3 lightPos, float r1, float r2)
+{
+    float3 emitterNormal = normalize(lightPos);
+    float3 emitterTangent = normalize(cross(emitterNormal, float3(1)));
+    float3 emitterBiTangent = cross(emitterNormal, emitterTangent);
+
+    // Note changing emitterSize here, also change emitterSize in RT shader
+    float emitterSize = 1.0f;
+
+    return lightPos + emitterSize * (r1 - 0.5f) * emitterTangent + emitterSize * (r2 - 0.5f) * emitterBiTangent;
+}
+
 static void createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
 {
-    const float3 lightPos = pLight->getWorldPosition();
+    const float3 lightPos = perturb(pLight->getWorldPosition(), distribution(generator), distribution(generator));
+
     const float3 lookat = pLight->getWorldDirection() + lightPos;
     float3 up(0, 1, 0);
     if (abs(glm::dot(up, pLight->getWorldDirection())) >= 0.95f)
@@ -229,6 +246,13 @@ void SimpleSM::ShadowPass::resetDepthTexture()
 
 SimpleSM::SimpleSM()
 {
+    uint32_t seed;
+    {
+        using namespace std::chrono;
+        seed = (time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count()) & 0xffffffff;
+    }
+    generator.seed(seed);
+
     GraphicsProgram::Desc desc;
     desc.addShaderLibrary("RenderPasses/SimpleSM/shadowPass.slang");
     desc.vsEntry("vsMain").psEntry("psMain");

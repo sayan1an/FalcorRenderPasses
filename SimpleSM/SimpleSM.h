@@ -28,6 +28,7 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
+#include <random>
 
 using namespace Falcor;
 
@@ -84,5 +85,4 @@ private:
     } mVisibilityPass;
 
     Scene::SharedPtr mpScene;
-    
 };
