@@ -497,12 +497,13 @@ namespace Mogwai
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/groundPlane.obj", groundPlaneInstances);
             SceneBuilder::InstanceMatrices objectInstance = { glm::translate(glm::identity<glm::mat4>(), glm::vec3(0,0,0)) };
            
-            sceneBuilder->import("D:/chairTree.obj", objectInstance);
+            sceneBuilder->import("G:/chairTreeLightCameraKF.dae", objectInstance);
+            
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/cube/cube.obj", objectInstance);
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/torus/torus.obj", objectInstance);
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/hdTree/stem.obj", objectInstance);
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/hdTree/leaves.obj", objectInstance);
-            float3 lightPosition = { 8, 8, 8 };
+            /*float3 lightPosition = { 8, 8, 8 };
             auto pointLight = PointLight::create();
             pointLight->setWorldPosition(lightPosition);
             pointLight->setOpeningAngle(float(std::_Pi) / 2.87f);
@@ -517,7 +518,7 @@ namespace Mogwai
             uint32_t animTime = 100;
             auto animationLight = Animation::create("AnimationLight", animTime);
             addKeyframes(animationLight, animTime, lightNodeId, 1.0f, 0.0f, float3(-12, 0, -12), float3(0, 12, 0));
-            sceneBuilder->addAnimation(0, animationLight);
+            sceneBuilder->addAnimation(0, animationLight);*/
 
             /*
             auto scene = sceneBuilder->getScene();
@@ -532,12 +533,18 @@ namespace Mogwai
             */
            
 
-            auto cam = Camera::create();
+            /*auto cam = Camera::create();
             glm::vec3 position(1, 0.5, 1);
             position /= glm::length(position);
             position *= 22.5;
             cam->setPosition(position);
-            sceneBuilder->setCamera(cam);
+            sceneBuilder->setCamera(cam);*/
+            //auto scene = sceneBuilder->getScene();
+            //scene->toggleCameraAnimation()
+
+            auto scene = sceneBuilder->getScene();
+            auto cam = scene->getCamera();
+            cam->setFocalLength(65);
 
             setScene(sceneBuilder->getScene());
         }
@@ -657,6 +664,15 @@ namespace Mogwai
                 float3 lightPosition = pLight->getWorldPosition();
                 float3 lightDirection = -lightPosition / glm::length(lightPosition);
                 pLight->setWorldDirection(lightDirection);
+
+                /*auto cam = mpScene->getCamera();
+                auto delta = cam->getTarget() - cam->getPosition();
+                cam->setPosition(cam->getPosition());
+                cam->setUpVector(cam->getUpVector());
+                cam->setTarget(float3(0));
+                cam->setViewMatrix(cam->getViewMatrix());
+                Scene::up*/
+                
             }
 
             executeActiveGraph(pRenderContext);
