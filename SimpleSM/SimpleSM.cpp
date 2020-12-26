@@ -68,7 +68,7 @@ static float3 perturb(const float3 lightPos, float r1, float r2)
     float3 emitterBiTangent = cross(emitterNormal, emitterTangent);
 
     // Note changing emitterSize here, also change emitterSize in RT shader
-    float emitterSize = 1.0f;
+    float emitterSize = 0.0f;
 
     return lightPos + emitterSize * (r1 - 0.5f) * emitterTangent + emitterSize * (r2 - 0.5f) * emitterBiTangent;
 }

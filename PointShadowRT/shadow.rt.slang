@@ -145,7 +145,7 @@ void rayGen()
     sampleNext1D(sg);
 
     float3 outCol = float3(0);
-    uint nSample = 4;
+    uint nSample = 10;
   
     float3 emitterNormal =  normalize(lightData.xyz);
     float3 emitterTangent = normalize(cross(emitterNormal, float3(1)));
@@ -170,6 +170,6 @@ void rayGen()
 
         outCol += float3(traceShadowRay(origin, lightDir) * cos * cosEmitter / (4 * distance * distance * 3.14159));
     }
-    float lightPower = 600; // Change this in readExr->readFeature when changed here
+    float lightPower = 1200; // Change this in readExr->readFeature when changed here
     outColor[launchIndex] = float4(lightPower * outCol / nSample, 1.0f);
 }

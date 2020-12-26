@@ -81,16 +81,18 @@ void DumpExr::execute(RenderContext* pRenderContext, const RenderData& renderDat
     const auto& pDstTextureA = renderData["dstA"]->asTexture();
     const auto& pDstTextureB = renderData["dstB"]->asTexture();
 
-    index = gpFramework->getGlobalClock().getFrame();
-
-    pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + "0_" + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
-    pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + "0_" + std::to_string(index) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    uint64_t frameId = gpFramework->getGlobalClock().getFrame();
+    
+    pSrcTextureA->captureToFile(0, 0, "C:/results/" + tagA + /*"4_" +*/ std::to_string(frameId) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
+    pSrcTextureB->captureToFile(0, 0, "C:/results/" + tagB + /*"4_" +*/ std::to_string(frameId) + ".exr", Falcor::Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::ExportAlpha | Falcor::Bitmap::ExportFlags::Uncompressed);
 
     pRenderContext->blit(pSrcTextureA->getSRV(), pDstTextureA->getRTV());
     pRenderContext->blit(pSrcTextureB->getSRV(), pDstTextureB->getRTV());
         
-
     index++;
+
+    if (index % 160 == 0)
+        gpFramework->getGlobalClock().step();
 }
 
 void DumpExr::renderUI(Gui::Widgets& widget)
