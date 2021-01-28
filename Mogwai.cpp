@@ -497,7 +497,7 @@ namespace Mogwai
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/groundPlane.obj", groundPlaneInstances);
             SceneBuilder::InstanceMatrices objectInstance = { glm::translate(glm::identity<glm::mat4>(), glm::vec3(0,0,0)) };
            
-            sceneBuilder->import("G:/chairTreeLightCameraKF.dae", objectInstance);
+            sceneBuilder->import("G:/chairTreeLightCameraKFValidation.dae", objectInstance);
             
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/cube/cube.obj", objectInstance);
             //sceneBuilder->import("D:/projects/Rayster/models/modelLibrary/basic-shapes/torus/torus.obj", objectInstance);
@@ -545,6 +545,9 @@ namespace Mogwai
             auto scene = sceneBuilder->getScene();
             auto cam = scene->getCamera();
             cam->setFocalLength(65);
+
+            auto pointLight = scene->getLight(0).get();
+            ((PointLight *)pointLight)->setOpeningAngle(float(std::_Pi) / 2.87f);
 
             setScene(sceneBuilder->getScene());
         }
